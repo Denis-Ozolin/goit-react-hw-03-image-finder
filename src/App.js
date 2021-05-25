@@ -3,67 +3,82 @@ import axios from 'axios';
 import Searchbar from './components/Searchbar/Searchbar';
 import ImageGallery from './components/ImageGallery/ImageGallery';
 import ImageGalleryItem from './components/ImageGalleryItem/ImageGalleryItem';
-// import Loader from './components/Loader/Loader';
-// import Button from './components/Button/Button';
+import Loader from './components/Loader/Loader';
+import Button from './components/Button/Button';
 // import Modal from './components/Modal/Modal';
 
 class App extends Component {
   state = {
-    images: []
+    images: [],
+    currentPage: 1,
+    searchQuery: '',
+    isLoading: false,
+    error: null,
   }
 
-  // https://pixabay.com/api/?key=20731913-04720c2299aa0ca3b12520f7d
-
-  
-  componentDidMount() {
-    // const BASE_URL = 'https://pixabay.com/api/';
-    // const KEY = '20731913-04720c2299aa0ca3b12520f7d';
-    
-    // axios.get('https://pixabay.com/api/?q=cat&page=1&key=20731913-04720c2299aa0ca3b12520f7d&image_type=photo&orientation=horizontal&per_page=12')
-    //   .then(({data}) => {
-    //     this.setState({ images: data.hits })
-    //     console.log(this.state.images);
-    //   }).catch(error => console.log(error));
+  apiSettings = {
+    BASE_URL: 'https://pixabay.com/api/',
+    KEY: '20731913-04720c2299aa0ca3b12520f7d',
   }
 
   componentDidUpdate(prevProps, prevState) {
-    
+    if (prevState.searchQuery !== this.state.searchQuery) {
+      this.fetchImages();
+    }
+
+    if (this.state.currentPage > 2) {
+      this.onScrollPage()
+    }
   }
 
-  onChangeQuery = query => {   
-      axios.get(`https://pixabay.com/api/?q=${query}&page=1&key=20731913-04720c2299aa0ca3b12520f7d&image_type=photo&orientation=horizontal&per_page=12`)
+  onChangeQuery = query => {
+    this.setState({
+      searchQuery: query,
+      currentPage: 1,
+      images: [],
+      error: null,
+    })
+  }
+
+  fetchImages = () => {
+    const { currentPage, searchQuery } = this.state;
+    const { BASE_URL, KEY } = this.apiSettings;
+
+    this.setState({isLoading: true})
+
+    axios.get(`${BASE_URL}?q=${searchQuery}&page=${currentPage}&key=${KEY}&image_type=photo&orientation=horizontal&per_page=12`)
       .then(({data}) => {
-        this.setState({ images: data.hits })
-      }).catch(error => console.log('error !!!'));
+        this.setState(prevState => ({
+          images: [...prevState.images, ...data.hits],
+          currentPage: prevState.currentPage + 1
+        }))
+      })
+      .catch(error => this.setState({error}))
+      .finally(() => this.setState({ isLoading: false }));
+  }
+
+  onScrollPage = () => {
+    window.scrollTo({
+      top: document.documentElement.scrollHeight,
+      behavior: 'smooth',
+    });
   }
 
   render() {
-    const { images } = this.state;
+    const { images, isLoading } = this.state;
 
     return (
       <>
         <Searchbar onSubmit={this.onChangeQuery} />
-        <ul className="ImageGallery">
-          {images.map(({id, webformatURL, tags}) => (
-          
-              <li key={ id }className="ImageGalleryItem">
-                <img src={webformatURL} alt={tags} className="ImageGalleryItem-image" />
-              </li>
-          ))}
-        </ul>
-        <ImageGallery>
-          <ImageGalleryItem imgArray={ images }/>
+        <ImageGallery children>
+          <ImageGalleryItem images={ images }/>
         </ImageGallery>
+        {isLoading && <Loader/>}
+        {images.length && !isLoading ? <Button btnName={"Load more"} onClick={this.fetchImages} /> : null}
+         {/* <Modal />  */}
       </>
     )
   }
 }
 
 export default App;
-
-  /* <Searchbar/>
-    <ImageGallery/>
-    <ImageGalleryItem/>
-    <Loader/>
-    <Button/> */
-    /* <Modal /> */

@@ -1,7 +1,7 @@
-const ImageGalleryItem = ({ imgArray }) => (
-  imgArray.map((item) => (       
-    <li key={ item.id }className="ImageGalleryItem">
-      <img src={item.webformatURL} alt={item.tags} className="ImageGalleryItem-image" />
+const ImageGalleryItem = ({ images }) => (
+  images.map((image) => (       
+    <li key={ image.id }className="ImageGalleryItem">
+      <img src={image.webformatURL} alt={image.tags} className="ImageGalleryItem-image" />
     </li>
   ))
 )
