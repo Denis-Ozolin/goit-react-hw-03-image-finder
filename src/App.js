@@ -5,7 +5,7 @@ import ImageGallery from './components/ImageGallery/ImageGallery';
 import ImageGalleryItem from './components/ImageGalleryItem/ImageGalleryItem';
 import Loader from './components/Loader/Loader';
 import Button from './components/Button/Button';
-// import Modal from './components/Modal/Modal';
+import Modal from './components/Modal/Modal';
 
 class App extends Component {
   state = {
@@ -14,6 +14,7 @@ class App extends Component {
     searchQuery: '',
     isLoading: false,
     error: null,
+    largeImgUrl: '',
   }
 
   apiSettings = {
@@ -21,13 +22,17 @@ class App extends Component {
     KEY: '20731913-04720c2299aa0ca3b12520f7d',
   }
 
+  componentDidMount() {
+    window.addEventListener('keydown', this.handleKeyDown);
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener('keydown', this.handleKeyDown);
+  }
+
   componentDidUpdate(prevProps, prevState) {
     if (prevState.searchQuery !== this.state.searchQuery) {
       this.fetchImages();
-    }
-
-    if (this.state.currentPage > 2) {
-      this.onScrollPage()
     }
   }
 
@@ -50,8 +55,9 @@ class App extends Component {
       .then(({data}) => {
         this.setState(prevState => ({
           images: [...prevState.images, ...data.hits],
-          currentPage: prevState.currentPage + 1
+          currentPage: prevState.currentPage + 1,
         }))
+        if(currentPage > 1)this.onScrollPage();
       })
       .catch(error => this.setState({error}))
       .finally(() => this.setState({ isLoading: false }));
@@ -64,18 +70,36 @@ class App extends Component {
     });
   }
 
+  openModal = (url) => {
+    this.setState({largeImgUrl: url})
+  }
+
+  closeModal = () => (
+    this.setState({largeImgUrl: ''})
+  )
+
+  handleKeyDown = e => {
+    if (e.code === "Escape") {
+      this.closeModal();
+    }
+  }
+  
+  handleBackdropClick = e => {
+    if (e.target === e.currentTarget) this.closeModal();
+  }
+
   render() {
-    const { images, isLoading } = this.state;
+    const { images, isLoading, largeImgUrl } = this.state;
 
     return (
       <>
         <Searchbar onSubmit={this.onChangeQuery} />
         <ImageGallery children>
-          <ImageGalleryItem images={ images }/>
+          <ImageGalleryItem images={images} onClick={this.openModal}/>
         </ImageGallery>
         {isLoading && <Loader/>}
         {images.length && !isLoading ? <Button btnName={"Load more"} onClick={this.fetchImages} /> : null}
-         {/* <Modal />  */}
+        {largeImgUrl && <Modal url={largeImgUrl} onClick={this.handleBackdropClick}/>}
       </>
     )
   }
